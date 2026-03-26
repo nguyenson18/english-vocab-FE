@@ -79,18 +79,6 @@ export default function FlashCard({ item, onNext }: FlashCardProps) {
   );
 }, [voices]);
 
-useEffect(() => {
-  if (voices.length) {
-    console.log(
-      voices.map((v) => ({
-        name: v.name,
-        lang: v.lang,
-        voiceURI: v.voiceURI,
-        default: v.default,
-      }))
-    );
-  }
-}, [voices]);
   const SELECTED_VOICE_NAME = "Microsoft Zira - English (United States)";
   const selectedVoice = useMemo(() => {
   return (
