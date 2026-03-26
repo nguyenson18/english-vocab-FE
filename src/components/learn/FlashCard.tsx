@@ -79,13 +79,13 @@ export default function FlashCard({ item, onNext }: FlashCardProps) {
   );
 }, [voices]);
 
-  const SELECTED_VOICE_NAME = "Microsoft Zira - English (United States)";
+  const SELECTED_VOICE_NAME = "Google UK English Female";
   const selectedVoice = useMemo(() => {
   return (
     voices.find(
       (v) =>
-        v.name === "Microsoft Zira - English (United States)" ||
-        v.voiceURI === "Microsoft Zira - English (United States)"
+        v.name === "Google UK English Female" ||
+        v.voiceURI === "Google UK English Female"
     ) || null
   );
 }, [voices]);
