@@ -9,6 +9,7 @@ import {
   Tooltip,
   Typography,
   Button,
+  Box,
 } from "@mui/material";
 import VolumeUpIcon from "@mui/icons-material/VolumeUp";
 import { Vocabulary } from "@/types/topic";
@@ -19,7 +20,7 @@ type FlashCardProps = {
 };
 
 export default function FlashCard({ item, onNext }: FlashCardProps) {
-  const [flipped, setFlipped] = useState(false);
+  const [showMeaning, setShowMeaning] = useState(false);
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
 
   useEffect(() => {
@@ -36,11 +37,12 @@ export default function FlashCard({ item, onNext }: FlashCardProps) {
 
     return () => {
       window.speechSynthesis.cancel();
+      window.speechSynthesis.onvoiceschanged = null;
     };
   }, []);
 
   useEffect(() => {
-    setFlipped(false);
+    setShowMeaning(false);
   }, [item]);
 
   const englishVoice = useMemo(() => {
@@ -60,7 +62,8 @@ export default function FlashCard({ item, onNext }: FlashCardProps) {
     utterance.lang = "en-US";
     utterance.rate = 0.9;
     utterance.pitch = 1;
-    utterance.volume = 100
+    utterance.volume = 1;
+
     if (englishVoice) {
       utterance.voice = englishVoice;
     }
@@ -70,22 +73,38 @@ export default function FlashCard({ item, onNext }: FlashCardProps) {
   };
 
   return (
-    <Card sx={{ maxWidth: 600, mx: "auto", borderRadius: 4 }}>
-      <CardContent>
-        <Stack spacing={3} alignItems="center">
-          {!flipped ? (
-            <>
-              <Stack direction="column" spacing={1} alignItems="center">
-                <Typography variant="h3" fontWeight={700}>
-                  {item.englishWord}
-                </Typography>
+    <Stack spacing={3} sx={{ maxWidth: 1000, mx: "auto" }}>
+      <Stack
+        direction={{ xs: "column", md: "row" }}
+        spacing={3}
+        justifyContent="center"
+        alignItems="stretch"
+      >
+        {/* Card tiếng Anh */}
+        <Card
+          sx={{
+            flex: 1,
+            minHeight: 260,
+            borderRadius: 4,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <CardContent sx={{ width: "100%" }}>
+            <Stack spacing={2} alignItems="center" justifyContent="center">
+              <Typography variant="overline" color="text.secondary">
+                English
+              </Typography>
 
-                <Tooltip title="Đọc từ tiếng Anh">
-                  <IconButton onClick={handleSpeak}>
-                    <VolumeUpIcon />
-                  </IconButton>
-                </Tooltip>
-              </Stack>
+              <Typography
+                variant="h3"
+                fontWeight={700}
+                textAlign="center"
+                sx={{ wordBreak: "break-word" }}
+              >
+                {item.englishWord}
+              </Typography>
 
               {item.pronunciation ? (
                 <Typography color="text.secondary">
@@ -93,28 +112,81 @@ export default function FlashCard({ item, onNext }: FlashCardProps) {
                 </Typography>
               ) : null}
 
-              <Button variant="contained" onClick={() => setFlipped(true)}>
-                Lật thẻ
-              </Button>
-            </>
-          ) : (
-            <>
-              <Typography variant="h4" fontWeight={600}>
-                {item.vietnameseMeaning}
+              <Tooltip title="Đọc từ tiếng Anh">
+                <IconButton onClick={handleSpeak} size="large">
+                  <VolumeUpIcon />
+                </IconButton>
+              </Tooltip>
+            </Stack>
+          </CardContent>
+        </Card>
+
+        {/* Card tiếng Việt */}
+        <Card
+          sx={{
+            flex: 1,
+            minHeight: 260,
+            borderRadius: 4,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            bgcolor: showMeaning ? "background.paper" : "grey.100",
+          }}
+        >
+          <CardContent sx={{ width: "100%" }}>
+            <Stack spacing={2} alignItems="center" justifyContent="center">
+              <Typography variant="overline" color="text.secondary">
+                Vietnamese
               </Typography>
 
-              <Stack direction="row" spacing={2}>
-                <Button variant="outlined" onClick={() => setFlipped(false)}>
-                  Xem lại
-                </Button>
-                <Button variant="contained" onClick={onNext}>
-                  Từ tiếp theo
-                </Button>
-              </Stack>
-            </>
-          )}
-        </Stack>
-      </CardContent>
-    </Card>
+              {showMeaning ? (
+                <Typography
+                  variant="h4"
+                  fontWeight={600}
+                  textAlign="center"
+                  sx={{ wordBreak: "break-word" }}
+                >
+                  {item.vietnameseMeaning}
+                </Typography>
+              ) : (
+                <Box
+                  sx={{
+                    width: "100%",
+                    minHeight: 80,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    border: "2px dashed",
+                    borderColor: "grey.400",
+                    borderRadius: 3,
+                    px: 2,
+                  }}
+                >
+                  <Typography color="text.secondary" textAlign="center">
+                    Nhấn “Mở nghĩa” để xem tiếng Việt
+                  </Typography>
+                </Box>
+              )}
+            </Stack>
+          </CardContent>
+        </Card>
+      </Stack>
+
+      <Stack direction="row" spacing={2} justifyContent="center">
+        {!showMeaning ? (
+          <Button variant="contained" onClick={() => setShowMeaning(true)}>
+            Mở nghĩa
+          </Button>
+        ) : (
+          <Button variant="outlined" onClick={() => setShowMeaning(false)}>
+            Ẩn nghĩa
+          </Button>
+        )}
+
+        <Button variant="contained" onClick={onNext}>
+          Từ tiếp theo
+        </Button>
+      </Stack>
+    </Stack>
   );
 }
