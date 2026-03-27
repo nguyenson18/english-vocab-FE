@@ -4,7 +4,7 @@ import AppShell from '@/components/layout/AppShell';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Ghi nhớ từ vựng tiếng Anh',
+  title: 'Bui thanh thuy kieu',
   description: 'Learn and memorize English vocabulary by topic',
 };
 
