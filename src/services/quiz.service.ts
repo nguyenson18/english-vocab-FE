@@ -9,7 +9,7 @@ type SubmitResponse = {
 
 const unwrap = async <T>(request: Promise<ApiEnvelope<T>>): Promise<T> => {
   const response = await request;
-  return response.data.data;
+  return response.data;
 };
 
 export const quizService = {

@@ -1,11 +1,19 @@
 "use client";
 
-import { useEffect, useState } from 'react';
-import { Alert, Box, CircularProgress, Stack, Typography } from '@mui/material';
-import { useParams } from 'next/navigation';
-import FlashCard from '@/components/learn/FlashCard';
-import { topicService } from '@/services/topic.service';
-import { Vocabulary } from '@/types/topic';
+import { useEffect, useState } from "react";
+import {
+  Alert,
+  Box,
+  Button,
+  CircularProgress,
+  Stack,
+  Typography,
+} from "@mui/material";
+import { useParams } from "next/navigation";
+import FlashCard from "@/components/learn/FlashCard";
+import { topicService } from "@/services/topic.service";
+import { Vocabulary } from "@/types/topic";
+import Link from "next/link";
 
 function shuffleArray<T>(array: T[]): T[] {
   const result = [...array];
@@ -23,7 +31,7 @@ export default function LearnPage() {
   const topicId = params.topicId;
   const [words, setWords] = useState<Vocabulary[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   useEffect(() => {
     if (!topicId) return;
@@ -36,7 +44,7 @@ export default function LearnPage() {
         setCurrentIndex(0);
       })
       .catch((err) =>
-        setError(err instanceof Error ? err.message : 'Failed to load words')
+        setError(err instanceof Error ? err.message : "Failed to load words"),
       );
   }, [topicId]);
 
@@ -44,11 +52,20 @@ export default function LearnPage() {
 
   return (
     <Stack spacing={3}>
-      <div>
-        <Typography variant="h4">Học từ vựng</Typography>
-        <Typography color="text.secondary">
-          Xem xét một từ tại một thời điểm và lật thẻ để xem nghĩa.
-        </Typography>
+      <div style={{display:'flex', justifyContent:'space-between'}}>
+        <div >
+          <Typography variant="h4">Học từ vựng</Typography>
+          <Typography color="text.secondary">
+            Xem xét một từ tại một thời điểm và lật thẻ để xem nghĩa.
+          </Typography>
+        </div>
+        <Button
+          component={Link}
+          href={`/topics/${topicId}/quiz`}
+          variant="contained"
+        >
+          Kiểm tra chủ đề
+        </Button>
       </div>
 
       {error ? <Alert severity="error">{error}</Alert> : null}
