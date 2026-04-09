@@ -35,7 +35,7 @@ export default function QuizPage() {
 
       const res = await quizService.startQuiz({
         topicId: currentTopicId,
-        limit: 10,
+        limit: 50,
       });
 
       setQuestions(res);
