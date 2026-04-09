@@ -34,4 +34,16 @@ export const topicService = {
 
   deleteVocabulary: async (id: string): Promise<{ id: string }> =>
     unwrap(api.delete<ApiEnvelope<{ id: string }>>(`/vocabularies/${id}`)),
+
+  uploadVocabularyImage: async (id: string, file: File): Promise<Vocabulary> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    console.log(file);
+    return unwrap(
+      api.patch<ApiEnvelope<Vocabulary>>(`/vocabularies/${id}/image`, formData),
+    );
+  },
+
+  removeVocabularyImage: async (id: string): Promise<Vocabulary> =>
+    unwrap(api.delete<ApiEnvelope<Vocabulary>>(`/vocabularies/${id}/image`)),
 };

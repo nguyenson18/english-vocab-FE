@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from "react";
 import {
   Accordion,
   AccordionDetails,
@@ -21,25 +21,31 @@ import {
   TableHead,
   TableRow,
   Typography,
-} from '@mui/material';
-import DeleteIcon from '@mui/icons-material/Delete';
-import EditIcon from '@mui/icons-material/Edit';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import Link from 'next/link';
-import { useParams } from 'next/navigation';
-import ConversationFormDialog from '@/components/conversation/ConversationFormDialog';
-import PassageFormDialog from '@/components/passage/PassageFormDialog';
-import VocabularyFormDialog from '@/components/vocabulary/VocabularyFormDialog';
-import { conversationService } from '@/services/conversation.service';
-import { passageService } from '@/services/passage.service';
-import { topicService } from '@/services/topic.service';
-import { Conversation, ConversationPayload } from '@/types/conversation';
-import { Passage, PassagePayload } from '@/types/passage';
-import { Topic, Vocabulary } from '@/types/topic';
+} from "@mui/material";
+import DeleteIcon from "@mui/icons-material/Delete";
+import EditIcon from "@mui/icons-material/Edit";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import Link from "next/link";
+import { useParams } from "next/navigation";
+import ConversationFormDialog from "@/components/conversation/ConversationFormDialog";
+import PassageFormDialog from "@/components/passage/PassageFormDialog";
+import VocabularyFormDialog from "@/components/vocabulary/VocabularyFormDialog";
+import { conversationService } from "@/services/conversation.service";
+import { passageService } from "@/services/passage.service";
+import { topicService } from "@/services/topic.service";
+import { Conversation, ConversationPayload } from "@/types/conversation";
+import { Passage, PassagePayload } from "@/types/passage";
+import { Topic, Vocabulary } from "@/types/topic";
+
+type VocabularySubmitPayload = {
+  form: Partial<Vocabulary>;
+  file?: File | null;
+  removeImage?: boolean;
+};
 
 const getPreview = (text?: string | null, maxLength = 220) => {
-  if (!text) return '';
-  const normalized = text.replace(/\s+/g, ' ').trim();
+  if (!text) return "";
+  const normalized = text.replace(/\s+/g, " ").trim();
   return normalized.length > maxLength
     ? `${normalized.slice(0, maxLength).trim()}...`
     : normalized;
@@ -55,29 +61,33 @@ export default function TopicDetailPage() {
   const [openVocabularyDialog, setOpenVocabularyDialog] = useState(false);
   const [openConversationDialog, setOpenConversationDialog] = useState(false);
   const [openPassageDialog, setOpenPassageDialog] = useState(false);
-  const [editingVocabulary, setEditingVocabulary] = useState<Vocabulary | null>(null);
-  const [editingConversation, setEditingConversation] = useState<Conversation | null>(null);
+  const [editingVocabulary, setEditingVocabulary] = useState<Vocabulary | null>(
+    null,
+  );
+  const [editingConversation, setEditingConversation] =
+    useState<Conversation | null>(null);
   const [editingPassage, setEditingPassage] = useState<Passage | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [actionError, setActionError] = useState('');
+  const [error, setError] = useState("");
+  const [actionError, setActionError] = useState("");
 
   const loadData = async (nextTopicId: string) => {
     try {
       setLoading(true);
-      setError('');
-      const [topicRes, vocabRes, conversationRes, passageRes] = await Promise.all([
-        topicService.getTopicById(nextTopicId),
-        topicService.getVocabulariesByTopic(nextTopicId),
-        conversationService.getConversations(nextTopicId),
-        passageService.getPassages(nextTopicId),
-      ]);
+      setError("");
+      const [topicRes, vocabRes, conversationRes, passageRes] =
+        await Promise.all([
+          topicService.getTopicById(nextTopicId),
+          topicService.getVocabulariesByTopic(nextTopicId),
+          conversationService.getConversations(nextTopicId),
+          passageService.getPassages(nextTopicId),
+        ]);
       setTopic(topicRes);
       setVocabularies(vocabRes);
       setConversations(Array.isArray(conversationRes) ? conversationRes : []);
       setPassages(Array.isArray(passageRes) ? passageRes : []);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load data');
+      setError(err instanceof Error ? err.message : "Failed to load data");
     } finally {
       setLoading(false);
     }
@@ -89,38 +99,69 @@ export default function TopicDetailPage() {
     }
   }, [topicId]);
 
-  const handleCreateOrUpdateVocabulary = async (payload: Partial<Vocabulary>) => {
-    setActionError('');
+  const handleCreateOrUpdateVocabulary = async ({
+    form,
+    file,
+    removeImage,
+  }: VocabularySubmitPayload) => {
+    setActionError("");
     try {
+      let savedVocabulary: Vocabulary;
+
       if (editingVocabulary) {
-        await topicService.updateVocabulary(editingVocabulary.id, payload);
+        savedVocabulary = await topicService.updateVocabulary(
+          editingVocabulary.id,
+          form,
+        );
+
+        if (removeImage) {
+          await topicService.removeVocabularyImage(editingVocabulary.id);
+        }
+
+        if (file) {
+          await topicService.uploadVocabularyImage(editingVocabulary.id, file);
+        }
       } else {
-        await topicService.createVocabulary(payload);
+        savedVocabulary = await topicService.createVocabulary(form);
+
+        if (file) {
+          await topicService.uploadVocabularyImage(savedVocabulary.id, file);
+        }
       }
+
       await loadData(topicId);
       setEditingVocabulary(null);
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : 'Failed to save vocabulary');
+      setActionError(
+        err instanceof Error ? err.message : "Failed to save vocabulary",
+      );
       throw err;
     }
   };
 
   const handleDeleteVocabulary = async (id: string) => {
-    if (!window.confirm('Delete this vocabulary?')) return;
-    setActionError('');
+    if (!window.confirm("Delete this vocabulary?")) return;
+    setActionError("");
     try {
       await topicService.deleteVocabulary(id);
       await loadData(topicId);
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : 'Failed to delete vocabulary');
+      setActionError(
+        err instanceof Error ? err.message : "Failed to delete vocabulary",
+      );
     }
   };
 
-  const handleCreateOrUpdateConversation = async (payload: ConversationPayload) => {
-    setActionError('');
+  const handleCreateOrUpdateConversation = async (
+    payload: ConversationPayload,
+  ) => {
+    setActionError("");
     try {
       if (editingConversation) {
-        await conversationService.updateConversation(editingConversation.id, payload);
+        await conversationService.updateConversation(
+          editingConversation.id,
+          payload,
+        );
       } else {
         await conversationService.createConversation(payload);
       }
@@ -128,24 +169,28 @@ export default function TopicDetailPage() {
       await loadData(topicId);
       setEditingConversation(null);
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : 'Failed to save conversation');
+      setActionError(
+        err instanceof Error ? err.message : "Failed to save conversation",
+      );
       throw err;
     }
   };
 
   const handleDeleteConversation = async (id: string) => {
-    if (!window.confirm('Delete this conversation?')) return;
-    setActionError('');
+    if (!window.confirm("Delete this conversation?")) return;
+    setActionError("");
     try {
       await conversationService.deleteConversation(id);
       await loadData(topicId);
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : 'Failed to delete conversation');
+      setActionError(
+        err instanceof Error ? err.message : "Failed to delete conversation",
+      );
     }
   };
 
   const handleCreateOrUpdatePassage = async (payload: PassagePayload) => {
-    setActionError('');
+    setActionError("");
     try {
       if (editingPassage) {
         await passageService.updatePassage(editingPassage.id, payload);
@@ -155,19 +200,23 @@ export default function TopicDetailPage() {
       await loadData(topicId);
       setEditingPassage(null);
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : 'Failed to save passage');
+      setActionError(
+        err instanceof Error ? err.message : "Failed to save passage",
+      );
       throw err;
     }
   };
 
   const handleDeletePassage = async (id: string) => {
-    if (!window.confirm('Delete this passage?')) return;
-    setActionError('');
+    if (!window.confirm("Delete this passage?")) return;
+    setActionError("");
     try {
       await passageService.deletePassage(id);
       await loadData(topicId);
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : 'Failed to delete passage');
+      setActionError(
+        err instanceof Error ? err.message : "Failed to delete passage",
+      );
     }
   };
 
@@ -175,25 +224,39 @@ export default function TopicDetailPage() {
     <Stack spacing={3}>
       <Stack direction="row" justifyContent="space-between" alignItems="center">
         <div>
-          <Typography variant="h4">{topic?.name || 'Topic detail'}</Typography>
+          <Typography variant="h4">{topic?.name || "Topic detail"}</Typography>
           <Typography color="text.secondary">
             Quản lý từ vựng, hội thoại và đoạn văn song ngữ cho chủ đề này.
           </Typography>
         </div>
         <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-          <Button component={Link} href={`/topics/${topicId}/learn`} variant="outlined">
+          <Button
+            component={Link}
+            href={`/topics/${topicId}/learn`}
+            variant="outlined"
+          >
             Học
           </Button>
-          <Button component={Link} href={`/topics/${topicId}/quiz`} variant="outlined">
+          <Button
+            component={Link}
+            href={`/topics/${topicId}/quiz`}
+            variant="outlined"
+          >
             Kiểm tra
           </Button>
           <Button variant="outlined" onClick={() => setOpenPassageDialog(true)}>
             Thêm đoạn văn
           </Button>
-          <Button variant="outlined" onClick={() => setOpenConversationDialog(true)}>
+          <Button
+            variant="outlined"
+            onClick={() => setOpenConversationDialog(true)}
+          >
             Thêm hội thoại
           </Button>
-          <Button variant="contained" onClick={() => setOpenVocabularyDialog(true)}>
+          <Button
+            variant="contained"
+            onClick={() => setOpenVocabularyDialog(true)}
+          >
             Thêm từ
           </Button>
         </Stack>
@@ -211,19 +274,28 @@ export default function TopicDetailPage() {
           <Card>
             <CardContent>
               <Stack spacing={2}>
-                <Stack direction="row" justifyContent="space-between" alignItems="center">
+                <Stack
+                  direction="row"
+                  justifyContent="space-between"
+                  alignItems="center"
+                >
                   <Box>
                     <Typography variant="h6">Từ vựng</Typography>
                     <Typography color="text.secondary">
                       Danh sách từ vựng thuộc chủ đề này.
                     </Typography>
                   </Box>
-                  <Chip label={`${vocabularies.length} từ`} color="primary" variant="outlined" />
+                  <Chip
+                    label={`${vocabularies.length} từ`}
+                    color="primary"
+                    variant="outlined"
+                  />
                 </Stack>
 
                 <Table>
                   <TableHead>
                     <TableRow>
+                      <TableCell>Ảnh</TableCell>
                       <TableCell>Từ tiếng Anh</TableCell>
                       <TableCell>Nghĩa tiếng Việt</TableCell>
                       <TableCell>Phiên âm</TableCell>
@@ -234,10 +306,27 @@ export default function TopicDetailPage() {
                   <TableBody>
                     {vocabularies.map((item) => (
                       <TableRow key={item.id}>
+                        <TableCell>
+                          {item.imageUrl ? (
+                            <img
+                              src={item.imageUrl}
+                              alt={item.englishWord}
+                              style={{
+                                width: 100,
+                                height: 100,
+                                objectFit: "cover",
+                                borderRadius: 8,
+                                border: "1px solid #ddd",
+                              }}
+                            />
+                          ) : (
+                            "-"
+                          )}
+                        </TableCell>
                         <TableCell>{item.englishWord}</TableCell>
                         <TableCell>{item.vietnameseMeaning}</TableCell>
-                        <TableCell>{item.pronunciation || '-'}</TableCell>
-                        <TableCell>{item.partOfSpeech || '-'}</TableCell>
+                        <TableCell>{item.pronunciation || "-"}</TableCell>
+                        <TableCell>{item.partOfSpeech || "-"}</TableCell>
                         <TableCell>
                           <IconButton
                             onClick={() => {
@@ -247,7 +336,9 @@ export default function TopicDetailPage() {
                           >
                             <EditIcon />
                           </IconButton>
-                          <IconButton onClick={() => handleDeleteVocabulary(item.id)}>
+                          <IconButton
+                            onClick={() => handleDeleteVocabulary(item.id)}
+                          >
                             <DeleteIcon />
                           </IconButton>
                         </TableCell>
@@ -255,8 +346,10 @@ export default function TopicDetailPage() {
                     ))}
                     {vocabularies.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={5}>
-                          <Typography color="text.secondary">Chưa có từ vựng nào.</Typography>
+                        <TableCell colSpan={6}>
+                          <Typography color="text.secondary">
+                            Chưa có từ vựng nào.
+                          </Typography>
                         </TableCell>
                       </TableRow>
                     ) : null}
@@ -269,11 +362,16 @@ export default function TopicDetailPage() {
           <Card>
             <CardContent>
               <Stack spacing={2}>
-                <Stack direction="row" justifyContent="space-between" alignItems="center">
+                <Stack
+                  direction="row"
+                  justifyContent="space-between"
+                  alignItems="center"
+                >
                   <Box>
                     <Typography variant="h6">Hội thoại song ngữ</Typography>
                     <Typography color="text.secondary">
-                      Thêm các đoạn đối thoại tiếng Anh và tiếng Việt để học theo ngữ cảnh.
+                      Thêm các đoạn đối thoại tiếng Anh và tiếng Việt để học
+                      theo ngữ cảnh.
                     </Typography>
                   </Box>
                   <Chip
@@ -286,14 +384,15 @@ export default function TopicDetailPage() {
                 {conversations.length === 0 ? (
                   <Box
                     sx={{
-                      border: '1px dashed',
-                      borderColor: 'divider',
+                      border: "1px dashed",
+                      borderColor: "divider",
                       borderRadius: 2,
                       p: 3,
                     }}
                   >
                     <Typography color="text.secondary">
-                      Chưa có hội thoại nào. Hãy thêm một đoạn hội thoại đầu tiên cho chủ đề này.
+                      Chưa có hội thoại nào. Hãy thêm một đoạn hội thoại đầu
+                      tiên cho chủ đề này.
                     </Typography>
                   </Box>
                 ) : (
@@ -302,17 +401,22 @@ export default function TopicDetailPage() {
                       <Accordion key={conversation.id} disableGutters>
                         <AccordionSummary expandIcon={<ExpandMoreIcon />}>
                           <Stack
-                            direction={{ xs: 'column', md: 'row' }}
+                            direction={{ xs: "column", md: "row" }}
                             justifyContent="space-between"
-                            alignItems={{ xs: 'flex-start', md: 'center' }}
+                            alignItems={{ xs: "flex-start", md: "center" }}
                             width="100%"
                             spacing={1}
                             sx={{ pr: 2 }}
                           >
                             <Box>
-                              <Typography fontWeight={700}>{conversation.title}</Typography>
-                              <Typography variant="body2" color="text.secondary">
-                                {conversation.description || 'Không có mô tả'}
+                              <Typography fontWeight={700}>
+                                {conversation.title}
+                              </Typography>
+                              <Typography
+                                variant="body2"
+                                color="text.secondary"
+                              >
+                                {conversation.description || "Không có mô tả"}
                               </Typography>
                             </Box>
                             <Chip
@@ -324,7 +428,11 @@ export default function TopicDetailPage() {
                         </AccordionSummary>
                         <AccordionDetails>
                           <Stack spacing={2}>
-                            <Stack direction="row" justifyContent="flex-end" spacing={1}>
+                            <Stack
+                              direction="row"
+                              justifyContent="flex-end"
+                              spacing={1}
+                            >
                               <Button
                                 size="small"
                                 startIcon={<EditIcon />}
@@ -339,7 +447,9 @@ export default function TopicDetailPage() {
                                 size="small"
                                 color="error"
                                 startIcon={<DeleteIcon />}
-                                onClick={() => handleDeleteConversation(conversation.id)}
+                                onClick={() =>
+                                  handleDeleteConversation(conversation.id)
+                                }
                               >
                                 Xóa
                               </Button>
@@ -353,25 +463,36 @@ export default function TopicDetailPage() {
                                 .sort((a, b) => a.orderIndex - b.orderIndex)
                                 .map((line, index) => (
                                   <Box
-                                    key={line.id || `${conversation.id}-${index}`}
+                                    key={
+                                      line.id || `${conversation.id}-${index}`
+                                    }
                                     sx={{
                                       borderRadius: 2,
-                                      backgroundColor: '#f8fafc',
+                                      backgroundColor: "#f8fafc",
                                       p: 2,
                                     }}
                                   >
                                     <Stack spacing={1}>
-                                      <Stack direction="row" justifyContent="space-between" alignItems="center">
+                                      <Stack
+                                        direction="row"
+                                        justifyContent="space-between"
+                                        alignItems="center"
+                                      >
                                         <Typography fontWeight={700}>
                                           {index + 1}. {line.speaker}
                                         </Typography>
                                         {line.note ? (
-                                          <Typography variant="caption" color="text.secondary">
+                                          <Typography
+                                            variant="caption"
+                                            color="text.secondary"
+                                          >
                                             {line.note}
                                           </Typography>
                                         ) : null}
                                       </Stack>
-                                      <Typography>{line.englishText}</Typography>
+                                      <Typography>
+                                        {line.englishText}
+                                      </Typography>
                                       <Typography color="text.secondary">
                                         {line.vietnameseText}
                                       </Typography>
@@ -392,27 +513,37 @@ export default function TopicDetailPage() {
           <Card>
             <CardContent>
               <Stack spacing={2}>
-                <Stack direction="row" justifyContent="space-between" alignItems="center">
+                <Stack
+                  direction="row"
+                  justifyContent="space-between"
+                  alignItems="center"
+                >
                   <Box>
                     <Typography variant="h6">Đoạn văn song ngữ</Typography>
                     <Typography color="text.secondary">
-                      Dùng cho bài đọc, đoạn mô tả hoặc ngữ cảnh dài có bản tiếng Anh và tiếng Việt.
+                      Dùng cho bài đọc, đoạn mô tả hoặc ngữ cảnh dài có bản
+                      tiếng Anh và tiếng Việt.
                     </Typography>
                   </Box>
-                  <Chip label={`${passages.length} đoạn văn`} color="success" variant="outlined" />
+                  <Chip
+                    label={`${passages.length} đoạn văn`}
+                    color="success"
+                    variant="outlined"
+                  />
                 </Stack>
 
                 {passages.length === 0 ? (
                   <Box
                     sx={{
-                      border: '1px dashed',
-                      borderColor: 'divider',
+                      border: "1px dashed",
+                      borderColor: "divider",
                       borderRadius: 2,
                       p: 3,
                     }}
                   >
                     <Typography color="text.secondary">
-                      Chưa có đoạn văn nào. Bạn có thể thêm bài đọc đầu tiên cho chủ đề này.
+                      Chưa có đoạn văn nào. Bạn có thể thêm bài đọc đầu tiên cho
+                      chủ đề này.
                     </Typography>
                   </Box>
                 ) : (
@@ -421,29 +552,40 @@ export default function TopicDetailPage() {
                       <Accordion key={passage.id} disableGutters>
                         <AccordionSummary expandIcon={<ExpandMoreIcon />}>
                           <Stack
-                            direction={{ xs: 'column', md: 'row' }}
+                            direction={{ xs: "column", md: "row" }}
                             justifyContent="space-between"
-                            alignItems={{ xs: 'flex-start', md: 'center' }}
+                            alignItems={{ xs: "flex-start", md: "center" }}
                             width="100%"
                             spacing={1}
                             sx={{ pr: 2 }}
                           >
                             <Box>
-                              <Typography fontWeight={700}>{passage.title}</Typography>
-                              <Typography variant="body2" color="text.secondary">
-                                {passage.description || getPreview(passage.englishContent, 120) || 'Không có mô tả'}
+                              <Typography fontWeight={700}>
+                                {passage.title}
+                              </Typography>
+                              <Typography
+                                variant="body2"
+                                color="text.secondary"
+                              >
+                                {passage.description ||
+                                  getPreview(passage.englishContent, 120) ||
+                                  "Không có mô tả"}
                               </Typography>
                             </Box>
                             <Chip
                               size="small"
-                              label={`${Math.max(1, Math.ceil((passage.englishContent || '').length / 280))} đoạn hiển thị`}
+                              label={`${Math.max(1, Math.ceil((passage.englishContent || "").length / 280))} đoạn hiển thị`}
                               variant="outlined"
                             />
                           </Stack>
                         </AccordionSummary>
                         <AccordionDetails>
                           <Stack spacing={2}>
-                            <Stack direction="row" justifyContent="flex-end" spacing={1}>
+                            <Stack
+                              direction="row"
+                              justifyContent="flex-end"
+                              spacing={1}
+                            >
                               <Button
                                 size="small"
                                 startIcon={<EditIcon />}
@@ -470,29 +612,33 @@ export default function TopicDetailPage() {
                               <Box
                                 sx={{
                                   borderRadius: 2,
-                                  backgroundColor: '#f8fafc',
+                                  backgroundColor: "#f8fafc",
                                   p: 2,
-                                  whiteSpace: 'pre-wrap',
+                                  whiteSpace: "pre-wrap",
                                 }}
                               >
                                 <Typography fontWeight={700} sx={{ mb: 1 }}>
                                   English
                                 </Typography>
-                                <Typography>{passage.englishContent}</Typography>
+                                <Typography>
+                                  {passage.englishContent}
+                                </Typography>
                               </Box>
 
                               <Box
                                 sx={{
                                   borderRadius: 2,
-                                  backgroundColor: '#f8fafc',
+                                  backgroundColor: "#f8fafc",
                                   p: 2,
-                                  whiteSpace: 'pre-wrap',
+                                  whiteSpace: "pre-wrap",
                                 }}
                               >
                                 <Typography fontWeight={700} sx={{ mb: 1 }}>
                                   Tiếng Việt
                                 </Typography>
-                                <Typography color="text.secondary">{passage.vietnameseContent}</Typography>
+                                <Typography color="text.secondary">
+                                  {passage.vietnameseContent}
+                                </Typography>
                               </Box>
                             </Stack>
                           </Stack>

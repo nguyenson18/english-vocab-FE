@@ -18,6 +18,8 @@ export type Vocabulary = {
   exampleEn?: string | null;
   exampleVi?: string | null;
   note?: string | null;
+  imageUrl?: string | null;
+  imagePublicId?: string | null;
   createdAt: string;
   updatedAt: string;
 };

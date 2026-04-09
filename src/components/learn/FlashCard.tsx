@@ -46,66 +46,66 @@ export default function FlashCard({ item, onNext }: FlashCardProps) {
   }, [item]);
 
   const englishVoice = useMemo(() => {
-  const lower = (text: string) => text.toLowerCase();
+    const lower = (text: string) => text.toLowerCase();
 
-  const femaleVoiceKeywords = [
-    "female",
-    "zira",
-    "jenny",
-    "aria",
-    "samantha",
-    "karen",
-    "moira",
-    "ava",
-    "emma",
-    "libby",
-    "sonia",
-  ];
+    const femaleVoiceKeywords = [
+      "female",
+      "zira",
+      "jenny",
+      "aria",
+      "samantha",
+      "karen",
+      "moira",
+      "ava",
+      "emma",
+      "libby",
+      "sonia",
+    ];
 
-  const englishVoices = voices.filter((v) =>
-    v.lang.toLowerCase().startsWith("en")
-  );
+    const englishVoices = voices.filter((v) =>
+      v.lang.toLowerCase().startsWith("en"),
+    );
 
-  return (
-    englishVoices.find((v) =>
-      femaleVoiceKeywords.some((keyword) =>
-        lower(`${v.name} ${v.voiceURI}`).includes(keyword)
-      )
-    ) ||
-    englishVoices.find((v) => v.lang.toLowerCase().includes("en-us")) ||
-    englishVoices.find((v) => v.lang.toLowerCase().includes("en-gb")) ||
-    englishVoices[0] ||
-    null
-  );
-}, [voices]);
+    return (
+      englishVoices.find((v) =>
+        femaleVoiceKeywords.some((keyword) =>
+          lower(`${v.name} ${v.voiceURI}`).includes(keyword),
+        ),
+      ) ||
+      englishVoices.find((v) => v.lang.toLowerCase().includes("en-us")) ||
+      englishVoices.find((v) => v.lang.toLowerCase().includes("en-gb")) ||
+      englishVoices[0] ||
+      null
+    );
+  }, [voices]);
 
   const SELECTED_VOICE_NAME = "Google UK English Female";
   const selectedVoice = useMemo(() => {
-  return (
-    voices.find(
-      (v) =>
-        v.name === "Google UK English Female" ||
-        v.voiceURI === "Google UK English Female"
-    ) || null
-  );
-}, [voices]);
- const handleSpeak = () => {
-  if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
-  if (!item?.englishWord) return;
+    return (
+      voices.find(
+        (v) =>
+          v.name === "Google UK English Female" ||
+          v.voiceURI === "Google UK English Female",
+      ) || null
+    );
+  }, [voices]);
+  const handleSpeak = () => {
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+    if (!item?.englishWord) return;
 
-  const utterance = new SpeechSynthesisUtterance(item.englishWord);
-  utterance.lang = "en-US";
-  utterance.rate = 0.9;
-  utterance.pitch = 1;
-  utterance.volume = 1;
+    const utterance = new SpeechSynthesisUtterance(item.englishWord);
+    utterance.lang = "en-US";
+    utterance.rate = 0.9;
+    utterance.pitch = 1;
+    utterance.volume = 1;
 
-  if (selectedVoice) {
-    utterance.voice = selectedVoice;
-  }
+    if (selectedVoice) {
+      utterance.voice = selectedVoice;
+    }
 
-  window.speechSynthesis.cancel();
-  window.speechSynthesis.speak(utterance);
-};
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(utterance);
+  };
 
   return (
     <Stack spacing={3} sx={{ maxWidth: 1000, mx: "auto" }}>
@@ -140,7 +140,6 @@ export default function FlashCard({ item, onNext }: FlashCardProps) {
               >
                 {item.englishWord}
               </Typography>
-
               {item.pronunciation ? (
                 <Typography color="text.secondary">
                   /{item.pronunciation}/
@@ -175,14 +174,31 @@ export default function FlashCard({ item, onNext }: FlashCardProps) {
               </Typography>
 
               {showMeaning ? (
-                <Typography
-                  variant="h4"
-                  fontWeight={600}
-                  textAlign="center"
-                  sx={{ wordBreak: "break-word" }}
-                >
-                  {item.vietnameseMeaning}
-                </Typography>
+                <>
+                  <Typography
+                    variant="h4"
+                    fontWeight={600}
+                    textAlign="center"
+                    sx={{ wordBreak: "break-word" }}
+                  >
+                    {item.vietnameseMeaning}
+                  </Typography>
+                  {item.imageUrl ? (
+                    <Box
+                      component="img"
+                      src={item.imageUrl}
+                      alt={item.englishWord}
+                      sx={{
+                        width: 220,
+                        height: 220,
+                        objectFit: "cover",
+                        borderRadius: 3,
+                        border: "1px solid",
+                        borderColor: "divider",
+                      }}
+                    />
+                  ) : null}
+                </>
               ) : (
                 <Box
                   sx={{
